@@ -1,0 +1,25 @@
+# Streamlit & Python cache
+.streamlit/
+__pycache__/
+*.pyc
+*.pyo
+*.pkl
+*.joblib
+
+# Data files (không đẩy file dữ liệu lớn lên GitHub)
+data/jobs.csv
+data/*.csv
+*.csv
+*.xlsx
+
+# Models
+models/*.pkl
+models/*.joblib
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
