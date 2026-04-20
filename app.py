@@ -1,106 +1,253 @@
 import streamlit as st
 import pandas as pd
-import joblib
 import plotly.express as px
-import plotly.graph_objects as go
-from wordcloud import WordCloud
+import joblib
 import matplotlib.pyplot as plt
+from wordcloud import WordCloud
 
-# Cấu hình trang
-st.set_page_config(
-    page_title="Vietnam Job Market Analytics",
-    page_icon="🇻🇳",
-    layout="wide"
-)
-
-# Tiêu đề chung
+# ====================== CSS TÙY CHỈNH (GIỐNG FIGMA) ======================
 st.markdown("""
-    <h1 style='text-align: center; color: white; background: linear-gradient(90deg, #4e54cf, #8f94fb); 
-    padding: 20px; border-radius: 10px;'>
-    🇻🇳 Vietnam Job Market Analytics
-    </h1>
-    <h3 style='text-align: center;'>Phân tích thị trường việc làm & Dự đoán mức lương</h3>
+    <style>
+    /* Gradient Header giống Figma */
+    .main-header {
+        background: linear-gradient(90deg, #4e54cf 0%, #8f94fb 100%);
+        padding: 2rem 0;
+        border-radius: 15px;
+        color: white;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .main-header h1 {
+        font-size: 2.8rem;
+        margin: 0;
+        font-weight: 700;
+    }
+    
+    .main-header h3 {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.95;
+        font-weight: 400;
+    }
+
+    /* Card style */
+    .stMetric {
+        background-color: #f8f9fa;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    /* Tab style */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 500;
+    }
+    
+    /* Button đẹp hơn */
+    .stButton>button {
+        background: linear-gradient(90deg, #4e54cf, #8f94fb);
+        color: white;
+        border-radius: 10px;
+        height: 50px;
+        font-weight: 600;
+        border: none;
+    }
+    
+    .stButton>button:hover {
+        background: linear-gradient(90deg, #3b40a3, #6f79e0);
+        transform: translateY(-2px);
+    }
+
+    /* Success message */
+    .stSuccess {
+        background-color: #e0f2e9;
+        border-left: 5px solid #4ade80;
+    }
+    
+    /* Info box */
+    .stInfo {
+        background-color: #f0f4ff;
+        border-left: 5px solid #6366f1;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-# Navigation (Tabs)
+# ====================== HEADER GIỐNG FIGMA ======================
+st.markdown("""
+    <div class="main-header">
+        <h1>🇻🇳 Vietnam Job Market Analytics</h1>
+        <h3>Phân tích thị trường việc làm & Dự đoán mức lương</h3>
+    </div>
+""", unsafe_allow_html=True)
+
+# Tabs
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Tổng quan", "📈 Phân tích EDA", "🔮 Dự đoán lương", "📋 Kết luận"])
 
 # ====================== TAB 1: TỔNG QUAN ======================
 with tab1:
     st.header("Phân Tích Thị Trường Việc Làm Việt Nam")
     
+    # Đọc dữ liệu
+    df = pd.read_csv('data/jobs_clean.csv')
+    
+    # Tính toán các chỉ số thực tế
+    total_jobs = len(df)
+    avg_salary = df['salary_avg'].mean()
+    num_cities = df['city'].nunique()
+    num_positions = df['position_level'].nunique()
+    max_salary = df['salary_avg'].max()
+    
+    # Metrics
     col1, col2, col3, col4 = st.columns(4)
-    
     with col1:
-        st.metric("Tổng số tin tuyển dụng", "1,500", "↓ 12%")
+        st.metric("Tổng số tin tuyển dụng", f"{total_jobs:,}")
     with col2:
-        st.metric("Thành phố", "7", "")
+        st.metric("Lương trung bình", f"{avg_salary:,.0f} VND")
     with col3:
-        st.metric("Ngành nghề", "15", "")
+        st.metric("Số thành phố", num_cities)
     with col4:
-        st.metric("Lương trung bình", "30.8M VND", "↑ 5.2%")
-    
+        st.metric("Mức lương cao nhất", f"{max_salary:,.0f} VND")
+
+    st.divider()
+
     st.subheader("Giới thiệu Dataset")
-    st.info("""
+    st.info(f"""
     **Nguồn dữ liệu**: Vietnam Jobs Dataset (cập nhật 2026)  
-    Dữ liệu tổng hợp từ các trang tuyển dụng hàng đầu tại Việt Nam.
-    """)
+    Bao gồm **{total_jobs:,}** tin tuyển dụng từ nhiều trang việc làm lớn tại Việt Nam.
     
-    st.write("### Các trường dữ liệu chính:")
-    fields = [
-        "Vị trí công việc (job_title)", "Thành phố (city)", "Mức lương", 
-        "Số năm kinh nghiệm", "Cấp bậc", "Ngành nghề", "Loại công việc", "Kỹ năng"
-    ]
-    for field in fields:
-        st.markdown(f"• {field}")
+    Dữ liệu đã được làm sạch và chuẩn hóa để phân tích.
+    """)
 
-# ====================== TAB 2: PHÂN TÍCH EDA ======================
+    col_info1, col_info2 = st.columns(2)
+    with col_info1:
+        st.write("### Các trường dữ liệu chính:")
+        st.markdown("""
+        - `job_title`: Vị trí công việc  
+        - `city`: Thành phố làm việc  
+        - `salary_avg`: Mức lương trung bình (VND)  
+        - `experience_years`: Số năm kinh nghiệm  
+        - `position_level`: Cấp bậc  
+        - `job_fields`: Ngành nghề / Lĩnh vực  
+        - `job_type`: Loại hình công việc  
+        """)
+    
+    with col_info2:
+        st.write("### Thống kê nhanh:")
+        st.markdown(f"""
+        - Số lượng cấp bậc khác nhau: **{num_positions}**
+        - Thành phố có nhiều việc làm nhất: **{df['city'].value_counts().idxmax()}**
+        - Lương trung bình cao nhất theo thành phố: **{df.groupby('city')['salary_avg'].mean().idxmax()}**
+        """)
+
+# ====================== TAB 2: PHÂN TÍCH EDA (ĐÃ SỬA) ======================
 with tab2:
-    st.header("Dashboard Phân Tích Dữ Liệu")
-    st.write("Khám phá xu hướng và insight từ thị trường việc làm Việt Nam")
+    st.header("📈 Dashboard Phân Tích Dữ Liệu")
+    st.write("Khám phá xu hướng thị trường việc làm Việt Nam từ dữ liệu thực tế")
 
-    col_a, col_b = st.columns(2)
+    df = pd.read_csv('data/jobs_clean.csv')
 
-    with col_a:
+    # --- Metrics (Sửa lỗi hiển thị) ---
+    total_jobs = len(df)
+    avg_salary = df['salary_avg'].mean()
+    num_cities = df['city'].nunique()
+    max_salary = df['salary_avg'].max()
+
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    with col_m1:
+        st.metric("Tổng tin tuyển dụng", f"{total_jobs:,}")
+    with col_m2:
+        st.metric("Lương trung bình", f"{avg_salary:,.0f} VND")
+    with col_m3:
+        st.metric("Số thành phố", num_cities)
+    with col_m4:
+        st.metric("Mức lương cao nhất", f"{max_salary:,.0f} VND")
+
+    st.divider()
+
+    # --- Row 1 ---
+    col1, col2 = st.columns(2)
+
+    with col1:
         st.subheader("Top 10 Thành Phố Tuyển Dụng Nhiều Nhất")
-        # Giả lập dữ liệu - bạn sẽ thay bằng dữ liệu thật sau
-        city_data = pd.DataFrame({
-            'Thành phố': ['Cần Thơ', 'Hải Phòng', 'Đà Nẵng', 'Hồ Chí Minh', 'Biên Hòa', 'Nha Trang', 'Hà Nội'],
-            'Số tin': [235, 228, 225, 210, 195, 190, 180]
-        })
-        fig1 = px.bar(city_data, x='Thành phố', y='Số tin', color='Số tin')
+        top_cities = df['city'].value_counts().head(10).reset_index()
+        top_cities.columns = ['Thành phố', 'Số tin']
+        fig1 = px.bar(top_cities, x='Thành phố', y='Số tin', 
+                      color='Số tin', text='Số tin')
+        fig1.update_traces(textposition='outside')
         st.plotly_chart(fig1, use_container_width=True)
 
-    with col_b:
-        st.subheader("Top 10 Ngành Nghề Hot Nhất")
-        job_data = pd.DataFrame({
-            'Ngành': ['IT - Phần mềm', 'Kế toán', 'Bất động sản', 'Marketing', 'Y tế', 'Xây dựng', 'Nhân sự'],
-            'Số lượng': [262, 198, 175, 168, 145, 132, 128]
-        })
-        fig2 = px.bar(job_data, x='Số lượng', y='Ngành', orientation='h', color='Số lượng')
+    with col2:
+        st.subheader("Top 10 Cấp Bậc Phổ Biến")
+        top_levels = df['position_level'].value_counts().head(10).reset_index()
+        top_levels.columns = ['Cấp bậc', 'Số lượng']
+        fig2 = px.bar(top_levels, x='Số lượng', y='Cấp bậc', 
+                      orientation='h', color='Số lượng')
         st.plotly_chart(fig2, use_container_width=True)
 
-    # Thêm 2 biểu đồ nữa giống Figma
-    col_c, col_d = st.columns(2)
-    with col_c:
-        st.subheader("Lương Trung Bình Theo Thành Phố")
-        salary_city = pd.DataFrame({
-            'Thành phố': ['Hà Nội', 'Hồ Chí Minh', 'Biên Hòa', 'Hải Phòng', 'Đà Nẵng', 'Cần Thơ', 'Nha Trang'],
-            'Lương TB (triệu)': [36.2, 34.8, 32.5, 31.8, 30.9, 29.5, 28.7]
-        })
-        fig3 = px.bar(salary_city, x='Thành phố', y='Lương TB (triệu)', color='Lương TB (triệu)')
-        st.plotly_chart(fig3, use_container_width=True)
+    # --- Row 2: Biểu đồ lương theo thành phố (ĐÃ SỬA) ---
+    st.subheader("Mức Lương Trung Bình Theo Thành Phố (Top 10)")
+    
+    salary_city = (df.groupby('city')['salary_avg']
+                   .mean()
+                   .round(0)
+                   .sort_values(ascending=False)
+                   .head(10)
+                   .reset_index())
+    
+    fig3 = px.bar(
+        salary_city, 
+        x='salary_avg', 
+        y='city', 
+        orientation='h',
+        color='salary_avg',
+        text='salary_avg',
+        color_continuous_scale='Blues'
+    )
+    
+    fig3.update_layout(
+        xaxis_title="Mức lương trung bình (VND)",
+        yaxis_title="",
+        height=500,
+        showlegend=False
+    )
+    
+    fig3.update_traces(
+        texttemplate='%{text:,.0f}',
+        textposition='outside'
+    )
+    
+    st.plotly_chart(fig3, use_container_width=True)
 
-    with col_d:
-        st.subheader("Top 15 Kỹ Năng Được Yêu Cầu Nhiều Nhất")
-        skills = "JavaScript,React,SQL,Java,Python,Leadership,Communication,Agile,PowerPoint,Project Management"
-        wordcloud = WordCloud(width=800, height=400, background_color='white').generate(skills)
-        fig, ax = plt.subplots(figsize=(10,5))
-        ax.imshow(wordcloud)
-        ax.axis('off')
-        st.pyplot(fig)
+    # --- Row 3: Lương theo kinh nghiệm ---
+    st.subheader("Phân Bố Lương Theo Số Năm Kinh Nghiệm")
+    fig4 = px.box(df, x='experience_years', y='salary_avg',
+                  title="Boxplot: Lương theo số năm kinh nghiệm")
+    fig4.update_layout(yaxis_title="Mức lương (VND)")
+    st.plotly_chart(fig4, use_container_width=True)
 
-# ====================== TAB 3: DỰ ĐOÁN LƯƠNG ======================
+    # --- Ngành nghề ---
+    st.subheader("Top Ngành Nghề / Lĩnh Vực Hot Nhất")
+    if 'job_fields' in df.columns and df['job_fields'].notna().any():
+        industries = df['job_fields'].dropna().str.split(',').explode().str.strip()
+        top_ind = industries.value_counts().head(12).reset_index()
+        top_ind.columns = ['Ngành nghề', 'Số lượng']
+        fig5 = px.bar(top_ind, x='Số lượng', y='Ngành nghề', 
+                      orientation='h', color='Số lượng')
+        st.plotly_chart(fig5, use_container_width=True)
+
+    # --- Insights ---
+    st.subheader("🔍 Insights Từ Dữ Liệu")
+    st.markdown(f"""
+    - **{df['city'].value_counts().idxmax()}** là thành phố có nhiều tin tuyển dụng nhất.
+    - Mức lương trung bình toàn thị trường: **{df['salary_avg'].mean():,.0f} VND**.
+    - Lương tăng rõ rệt khi kinh nghiệm từ **3 năm** trở lên.
+    """)
 # ====================== TAB 3: DỰ ĐOÁN LƯƠNG ======================
 with tab3:
     st.header("🔮 Dự Đoán Mức Lương")
@@ -181,32 +328,55 @@ with tab3:
                 st.error(f"❌ Lỗi khi dự đoán: {str(e)}")
                 st.info("Hãy kiểm tra xem đã chạy `python train_model.py` chưa.")
 # ====================== TAB 4: KẾT LUẬN ======================
+# ====================== TAB 4: KẾT LUẬN ======================
 with tab4:
     st.header("Kết Luận & Kiến Nghị")
     
-    st.subheader("Insights Quan Trọng")
-    insights = [
-        "Hồ Chí Minh và Hà Nội chiếm khoảng 60% tổng tin tuyển dụng",
-        "IT - Phần mềm là ngành có mức lương cao nhất và nhu cầu lớn",
-        "Mức lương tăng mạnh theo kinh nghiệm (Fresher → Senior có thể tăng gấp 3-4 lần)",
-        "JavaScript, React, Python là những kỹ năng hot nhất hiện nay"
-    ]
+    df = pd.read_csv('data/jobs_clean.csv')
     
-    for i, insight in enumerate(insights, 1):
-        st.markdown(f"**{i}.** {insight}")
+    st.subheader("🔑 Insights Quan Trọng Từ Dữ Liệu")
     
-    st.subheader("Hướng Phát Triển Tiếp Theo")
-    st.write("""
-    - Nâng cấp dữ liệu thời gian thực từ TopCV, VietnamWorks  
-    - Thêm tính năng gợi ý việc làm (Job Recommendation)  
-    - Xây dựng AI Chatbot tư vấn nghề nghiệp  
-    - Phát triển phiên bản Mobile App
+    # Tính một số insight thực tế
+    top_city = df['city'].value_counts().idxmax()
+    top_city_count = df['city'].value_counts().max()
+    highest_salary_city = df.groupby('city')['salary_avg'].mean().idxmax()
+    avg_salary_exp5 = df[df['experience_years'] >= 5]['salary_avg'].mean()
+    
+    st.markdown(f"""
+    1. **Địa lý tuyển dụng**: 
+       - **{top_city}** dẫn đầu với **{top_city_count:,}** tin tuyển dụng.
+       - Hồ Chí Minh và Hà Nội thường chiếm tỷ lệ lớn nhất về cơ hội việc làm.
+    
+    2. **Ngành nghề & Lương**:
+       - Các ngành **IT, Kinh doanh - Bán hàng, Xây dựng** có nhu cầu tuyển dụng cao.
+       - **{highest_salary_city}** là thành phố có mức lương trung bình cao nhất.
+    
+    3. **Kinh nghiệm & Giá trị**:
+       - Mức lương tăng rõ rệt theo kinh nghiệm. Với trên 5 năm kinh nghiệm, lương trung bình đạt khoảng **{avg_salary_exp5:,.0f} VND**.
+    
+    4. **Cấp bậc**:
+       - Cấp bậc **"nhân viên"** chiếm tỷ lệ lớn nhất, nhưng các vị trí quản lý và trưởng nhóm có mức lương cao hơn đáng kể.
     """)
 
-# Footer
-st.markdown("---")
-st.markdown("""
-    <p style='text-align: center; color: grey;'>
-    © 2026 Vietnam Job Market Analytics | Data Science Project | Built with Streamlit + Python
-    </p>
-""", unsafe_allow_html=True)
+    st.divider()
+    
+    st.subheader("🚀 Hướng Phát Triển Tiếp Theo")
+    st.markdown("""
+    - **Nâng cấp dữ liệu**: Thu thập dữ liệu thời gian thực từ TopCV, VietnamWorks, ITviec.
+    - **Cải thiện mô hình**: Sử dụng XGBoost hoặc LightGBM, thêm feature engineering.
+    - **Tính năng mới**:
+        - Gợi ý việc làm (Job Recommendation System)
+        - AI Chatbot tư vấn nghề nghiệp và CV
+        - Phân tích kỹ năng hot theo ngành
+        - Dashboard tương tác nâng cao (Power BI hoặc Streamlit + Altair)
+    - **Triển khai**: Deploy lên Streamlit Cloud hoặc phát triển phiên bản Mobile App.
+    """)
+
+    st.divider()
+    
+    st.subheader("📌 Bài Học Rút Ra")
+    st.markdown("""
+    - **Chất lượng dữ liệu** quan trọng hơn số lượng. Việc làm sạch và chuẩn hóa lương là bước then chốt.
+    - Feature Engineering (tạo `salary_avg`, `experience_years`) giúp mô hình học tốt hơn rất nhiều.
+    - Giao diện người dùng (User Experience) quyết định việc dự án có thực tế và dễ sử dụng hay không.
+    """)
