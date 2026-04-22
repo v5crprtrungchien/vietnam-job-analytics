@@ -5,86 +5,90 @@ import joblib
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 
-# ====================== CSS TÙY CHỈNH (GIỐNG FIGMA) ======================
 st.markdown("""
-    <style>
-    /* Gradient Header giống Figma */
-    .main-header {
-        background: linear-gradient(90deg, #4e54cf 0%, #8f94fb 100%);
-        padding: 2rem 0;
-        border-radius: 15px;
-        color: white;
-        text-align: center;
-        margin-bottom: 1.5rem;
-    }
-    
-    .main-header h1 {
-        font-size: 2.8rem;
-        margin: 0;
-        font-weight: 700;
-    }
-    
-    .main-header h3 {
-        margin: 0.5rem 0 0 0;
-        opacity: 0.95;
-        font-weight: 400;
-    }
+<style>
 
-    /* Card style */
-    .stMetric {
-        background-color: #f8f9fa;
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
+/* ===== HEADER ===== */
+.main-header {
+    background: linear-gradient(90deg, #4e54cf 0%, #8f94fb 100%);
+    padding: 2.2rem 1rem;
+    border-radius: 16px;
+    color: white;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(78, 84, 207, 0.4);
+}
 
-    /* Tab style */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-weight: 500;
-    }
-    
-    /* Button đẹp hơn */
-    .stButton>button {
-        background: linear-gradient(90deg, #4e54cf, #8f94fb);
-        color: white;
-        border-radius: 10px;
-        height: 50px;
-        font-weight: 600;
-        border: none;
-    }
-    
-    .stButton>button:hover {
-        background: linear-gradient(90deg, #3b40a3, #6f79e0);
-        transform: translateY(-2px);
-    }
+/* ===== METRIC FIX ===== */
+div[data-testid="stMetric"] {
+    background-color: #ffffff !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 12px;
+    padding: 1.4rem 1rem !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
+}
 
-    /* Success message */
-    .stSuccess {
-        background-color: #e0f2e9;
-        border-left: 5px solid #4ade80;
-    }
-    
-    /* Info box */
-    .stInfo {
-        background-color: #f0f4ff;
-        border-left: 5px solid #6366f1;
-    }
-    </style>
+/* LABEL (FIX MỜ) */
+div[data-testid="stMetricLabel"] * {
+    color: #334155 !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    opacity: 1 !important;  /* QUAN TRỌNG */
+}
+
+/* VALUE */
+div[data-testid="stMetricValue"] {
+    color: #1e40af !important;
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+    opacity: 1 !important;
+}
+
+/* ===== TABS CHIA ĐỀU ===== */
+.stTabs [data-baseweb="tab-list"] {
+    display: flex;
+    width: 100%;
+    background-color: #f1f5f9;
+    padding: 6px;
+    border-radius: 12px;
+}
+
+/* mỗi tab chiếm đều */
+.stTabs [data-baseweb="tab"] {
+    flex: 1;                /* 🔥 CHIA ĐỀU */
+    text-align: center;
+    border-radius: 10px;
+    padding: 12px 0;
+    font-weight: 600;
+    color: #334155;
+}
+
+/* tab active */
+.stTabs [aria-selected="true"] {
+    background-color: white !important;
+    color: #4e54cf !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* ===== BUTTON ===== */
+.stButton>button {
+    background: linear-gradient(90deg, #4e54cf, #8f94fb);
+    color: white;
+    border-radius: 12px;
+    height: 54px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+</style>
 """, unsafe_allow_html=True)
-
-# ====================== HEADER GIỐNG FIGMA ======================
+# ====================== HEADER ======================
 st.markdown("""
-    <div class="main-header">
-        <h1>🇻🇳 Vietnam Job Market Analytics</h1>
-        <h3>Phân tích thị trường việc làm & Dự đoán mức lương</h3>
-    </div>
-""", unsafe_allow_html=True)
+<div class="main-header">
+    <h1>🇻🇳 Vietnam Job Market Analytics</h1>
+    <h3>Phân tích thị trường việc làm & Dự đoán mức lương</h3>
+</div>
+""", unsafe_allow_html=True)    
 
 # Tabs
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Tổng quan", "📈 Phân tích EDA", "🔮 Dự đoán lương", "📋 Kết luận"])
@@ -327,7 +331,6 @@ with tab3:
             except Exception as e:
                 st.error(f"❌ Lỗi khi dự đoán: {str(e)}")
                 st.info("Hãy kiểm tra xem đã chạy `python train_model.py` chưa.")
-# ====================== TAB 4: KẾT LUẬN ======================
 # ====================== TAB 4: KẾT LUẬN ======================
 with tab4:
     st.header("Kết Luận & Kiến Nghị")
